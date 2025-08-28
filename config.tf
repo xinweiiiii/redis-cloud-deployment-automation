@@ -13,6 +13,10 @@ provider "rediscloud" {
   secret_key = var.rediscloud_secret_key
 }
 
+provider "aws" {
+  region = var.aws_region
+}
+
 terraform {
   backend "s3" {
     bucket = "demo-my-terraform-state-bucket"

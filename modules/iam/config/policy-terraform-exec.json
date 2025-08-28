@@ -1,0 +1,77 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "S3BucketLevelList",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListBucket",
+        "s3:GetBucketLocation",
+        "s3:ListBucketVersions",
+        "s3:ListBucketMultipartUploads"
+      ],
+      "Resource": "arn:aws:s3:::${tf_state_bucket}",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": "${tf_state_prefix}*"
+        }
+      }
+    },
+    {
+      "Sid": "S3ObjectLevelCRUD",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:GetObjectVersion",
+        "s3:GetObjectTagging",
+        "s3:PutObject",
+        "s3:PutObjectAcl",
+        "s3:PutObjectTagging"
+      ],
+      "Resource": "arn:aws:s3:::${tf_state_bucket}/${tf_state_prefix}*"
+    },
+    {
+      "Sid": "KMSForS3State",
+      "Effect": "Allow",
+      "Action": [
+        "kms:Encrypt",
+        "kms:Decrypt",
+        "kms:ReEncrypt*",
+        "kms:GenerateDataKey*",
+        "kms:DescribeKey"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "VPCCore",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc", 
+        "ec2:DescribeVpcs", 
+        "ec2:ModifyVpcAttribute",
+        "ec2:CreateSubnet", 
+        "ec2:ModifySubnetAttribute", 
+        "ec2:DescribeSubnets",
+        "ec2:CreateSecurityGroup",
+        "ec2:DescribeSecurityGroups",
+        "ec2:CreateNetworkAcl",
+        "ec2:CreateNetworkAclEntry",
+        "ec2:DescribeNetworkAcls",
+        "ec2:DescribeAccountAttributes", 
+        "ec2:DescribeAvailabilityZones"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "VPCPeering",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpcPeeringConnection",
+        "ec2:AcceptVpcPeeringConnection",
+        "ec2:DescribeVpcPeeringConnections",
+        "ec2:ModifyVpcPeeringConnectionOptions"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
