@@ -94,4 +94,12 @@ variable "databases" {
     support_oss_cluster_api      = optional(bool, false)
   }))
   default = {}
+
+  validation {
+    condition = alltrue([
+      for db in values(var.databases) :
+      db.dataset_size_in_gb > 0 && db.throughput_measurement_value >= 0
+    ])
+    error_message = "Each database must have dataset_size_in_gb > 0 and throughput_measurement_value >= 0."
+  }
 }

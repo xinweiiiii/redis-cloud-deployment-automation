@@ -76,14 +76,11 @@ def main():
 
     wf = pd.DataFrame(work)
 
-    print(wf)
     # Clean rows
     before = len(wf)
     wf = wf.dropna(subset=["database_name","dataset_size_in_gb"]).copy()
     wf["dataset_size_in_gb"] = wf["dataset_size_in_gb"]
     wf["size_key"] = wf["dataset_size_in_gb"].round(PREC)
-
-    print(wf)
     after = len(wf)
     if after < before:
         print(f"Skipped {before - after} row(s) due to missing/zero dataset_size_in_gb or name", file=sys.stderr)
@@ -125,7 +122,7 @@ def main():
     out_path.write_text(json.dumps(tfvars, indent=2))
     print(f"Wrote {out_path}")
 
-            # Optionally write HCL snippet for DB resources
+    # Optionally write HCL snippet for DB resources
     if args.emit_hcl:
         hcl_path = Path(args.emit_hcl)
         # Create a resource per DB using for_each over var.databases (recommended)
