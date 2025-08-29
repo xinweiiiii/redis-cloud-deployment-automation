@@ -38,6 +38,7 @@ resource "rediscloud_subscription" "sub" {
     }
 
     # Optional: maintenance windows
+    # TODO: Update this config to environment variable but set it as optional
     maintenance_windows {
         mode = "manual"
         window {

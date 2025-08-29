@@ -92,6 +92,28 @@ variable "databases" {
     throughput_measurement_value = number
     modules                      = optional(list(string), [])
     support_oss_cluster_api      = optional(bool, false)
+  
+    # TODO: Consider shifting this to another env variable
+    # Security (all optional — only set in tfvars if you want them)
+    enable_tls             = optional(bool)
+    password               = optional(string)
+    source_ips             = optional(list(string))
+    client_ssl_certificate = optional(string)
+  
+    # --- Data management (make these optional) ---
+    data_persistence            = optional(string) # e.g. "none","aof-every-write","aof-every-1-second","snapshot-every-1-hour"
+    data_eviction               = optional(string) # e.g. "volatile-lru","allkeys-lru","noeviction", etc.
+    average_item_size_in_bytes  = optional(number)
+  
+    # --- Replication of external DBs (optional) ---
+    # URIs like: redis://user:pass@host:port
+    replica_ofs                 = optional(list(string))
+  
+    # --- Alerts (optional) ---
+    alerts = optional(list(object({
+      name  = string  # e.g., "dataset-size"
+      value = number  # threshold
+    })))
   }))
   default = {}
 
@@ -101,5 +123,17 @@ variable "databases" {
       db.dataset_size_in_gb > 0 && db.throughput_measurement_value >= 0
     ])
     error_message = "Each database must have dataset_size_in_gb > 0 and throughput_measurement_value >= 0."
+  }
+}
+
+# Redis Version 
+variable "redis_version" {
+  type        = string
+  description = "Redis version for the subscription"
+  default     = "7.4"
+
+  validation {
+    condition     = contains(["7.4", "8"], var.redis_version)
+    error_message = "redis_version must be either \"7.4\" or \"8\"."
   }
 }
