@@ -1,0 +1,2 @@
+subscriptionId,activeActiveSetId,provider,region,subscriptionName,hosted,flash,activeActive,databaseName,quantity,totalMemory,shards,throughputOpsSec,aaReadOpsSec,aaWriteOpsSec,replication,ossClusterApi,pricingVersion,qpf
+1,0,AWS,ap-southeast-1,Subscription1,TRUE,FALSE,FALSE,redis-db1,1,0.1,0,100,,,FALSE,No,shard-type-by-price-and-monthly-200-minimal-non-rof,Standard
