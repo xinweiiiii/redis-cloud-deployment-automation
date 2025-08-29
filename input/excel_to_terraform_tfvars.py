@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Read a CSV File of Redis Sizing and emil:
+ Read a CSV File of Redis Sizing and emit:
 1) terraform.auto.tfvars.json - containing:
-    - databases: map of DB entries (expanded by quanitity)
-    - creation_plans: aggregated size, throughout, replication
+    - databases: map of DB entries (expanded by quantity)
+    - creation_plans: aggregated size, throughput, replication
 
 Column Expectations (auto detected by fuzzy names):
 - database name: databaseNames | database | db | name
@@ -14,14 +14,15 @@ Column Expectations (auto detected by fuzzy names):
 - OSS Cluster API:      ossClusterAPI | support_oss_cluster_api | osscluster
 
 Usage:
-python csv_to_redis_tf.py --input sizing.csv --out terraform.auto.tfvars.json
+python excel_to_terraform_tfvars.py --input sizing.csv --out terraform.auto.tfvars.json
 """
 
 # TODO: Sort out the different region deployment
 
 import argparse, json, sys, re
 from pathlib import Path
-from excel_to_terraform_tfvars import pick_column, str_to_bool, sanitize_resource_name, load_table
+# TODO: Define these helper functions or import from a separate module
+# from utils import pick_column, str_to_bool, sanitize_resource_name, load_table
 import pandas as pd
 
 def main():
@@ -30,7 +31,7 @@ def main():
     p.add_argument("--sheet", default=None, help="Excel sheet name (if input is .xlsx/.xls)")
     p.add_argument("--out", default="terraform.auto.tfvars.json", help="Output tfvars JSON path")
     p.add_argument("--emit-hcl", dest="emit_hcl", default=None, help="Optional: write an HCL snippet for DB resources")
-    args = p.parse_args
+    args = p.parse_args()
 
     path = Path(args.input)
     if not path.exists():
@@ -61,7 +62,8 @@ def main():
     work["database_name"] = df[db_col].astype(str)
     work["quantity"] = pd.to_numeric(df[qty_col], errors="coerce").fillna(1).astype(int)
     work["dataset_size_in_gb"] = pd.to_numeric(df[mem_col],errors="coerce")
-    work["throughput_ops_per_second"] = pd.to_numeric(df[ops_col], errors="coerce").fillna(0).astype(int) if ops_col else 0
+    work["throughput_ops_per_second"] = pd.to_numeric(df[ops_col], errors="coerce") \
+        .fillna(0).astype(int) if ops_col else pd.Series([0] * len(df))
     work["replication"] = df[repl_col].apply(str_to_bool) if repl_col else False
     work["support_oss_cluster_api"] = df[oss_col].apply(str_to_bool) if oss_col else False
 
@@ -79,7 +81,7 @@ def main():
     wf = wf[wf["dataset_size_in_gb"] > 0]
     after = len(wf)
     if after < before:
-        print(f"Skipped {before - after} row(s) due to missing/zero dataaset_size_in_gb or name", file=sys.stderr)
+        print(f"Skipped {before - after} row(s) due to missing/zero dataset_size_in_gb or name", file=sys.stderr)
 
     # Build database map 
     databases = {}
@@ -92,31 +94,28 @@ def main():
             databases[name] = {
                 "dataset_size_in_gb": int(r.get("dataset_size_in_gb", 0 )),
                 "replication": bool(r.get("replication", False)),
-                "throughput_measurement_value": int(r.get("throughout_ops_per_second, 0")),
+                "throughput_measurement_value": int(r.get("throughput_ops_per_second", 0)),
                 "modules": base_mods,
                 "support_oss_cluster_api": bool(r.get("support_oss_cluster_api", False)),
-            }
+    # Build creation plans by grouping
+    g = wf.groupby(
+        ["dataset_size_in_gb", "replication", "throughput_ops_per_second"],
+        dropna=False
+    )["quantity"].sum().reset_index()
 
-        # Build creation plans by grouping
-        g = wf.groupby(
-            ["dataset_size_in_gb", "replication", "throughput_ops_per_second"],
-            dropna=False
-        )["quantity"].sum().reset_index()
-
-
-        creation_plans = [{
-            "dataset_size_in_gb": int(row["dataset_size_in_gb"]),
-            "quantity": int(row["quantity"]),
-            "replication": bool(row["replication"]),
-            "throughput_measurement_by": "operations-per-second",
-            "throughput_measurement_value": int(row["throughput_ops_per_second"]),
-        } for _, row in g.iterrows()]
-
-        # Write tfvars JSON
-        tfvars = {"databases": databases, "creation_plans": creation_plans}
-        out_path = Path(args.out)
-        out_path.write_text(json.dumps(tfvars, indent=2))
-        print(f"Wrote {out_path}")
+    creation_plans = [{
+        "dataset_size_in_gb": int(row["dataset_size_in_gb"]),
+        "quantity": int(row["quantity"]),
+        "replication": bool(row["replication"]),
+        "throughput_measurement_by": "operations-per-second",
+        "throughput_measurement_value": int(row["throughput_ops_per_second"]),
+    } for _, row in g.iterrows()]
+    } for _, row in g.iterrows()]
+    # Write tfvars JSON
+    tfvars = {"databases": databases, "creation_plans": creation_plans}
+    out_path = Path(args.out)
+    out_path.write_text(json.dumps(tfvars, indent=2))
+    print(f"Wrote {out_path}")
 
             # Optionally write HCL snippet for DB resources
     if args.emit_hcl:

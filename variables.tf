@@ -21,11 +21,6 @@ variable "rediscloud_secret_key" {
     sensitive   = true
 }
 
-variable "redis_subscription_name" {
-  type    = string
-  default = "demo-subscription"
-}
-
 variable "aws_region" {
   type        = string
   description = "AWS region for VPC and resources"
@@ -52,10 +47,15 @@ variable "subscription_name" {
     default = "default subscription"
 }
 
-variable "aws_region_redis_cloud" {
-  type        = string
-  description = "AWS region for Redis Cloud"
-  default     = "ap-southeast-1"
+variable "preferred_azs" {
+  type        = list(string)
+  description = "Exact AZ names to use (must be in the selected region)"
+  default     = ["ap-southeast-1a", "ap-southeast-1b"]
+
+  validation {
+    condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.aws_region)])
+    error_message = "Provide at least one AZs, all starting with the region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
+  }
 }
 
 variable "preferred_azs" {
@@ -64,21 +64,10 @@ variable "preferred_azs" {
   default     = ["ap-southeast-1a", "ap-southeast-1b"]
 
   validation {
-    condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.region)])
-    error_message = "Provide at least one AZs, all starting with the region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
+    condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.aws_region_redis_cloud)])
+    error_message = "Provide at least one AZ, and ensure all start with the selected region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
   }
 }
-
-variable "redis_version" {
-    type = string
-    description = "Redis version to deploy your resources"
-    default = "7.2"
-}
-
-variable "creation_plans" {
-  description = "Aggregated plans Redis uses to pre-provision capacity"
-  type = list(object({
-    dataset_size_in_gb           = number
     quantity                     = number
     replication                  = bool
     throughput_measurement_by    = string

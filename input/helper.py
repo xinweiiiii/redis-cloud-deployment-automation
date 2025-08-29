@@ -27,17 +27,16 @@ def pick_column(df, candidates):
 def str_to_bool(val):
     if pd.isna(val):
         return False
-    s = str(val).strip.lower()
+    s = str(val).strip().lower()
     # Return boolean true for any of the below syntax
     return s in {"1","true"}
-
+def sanitize_resource_name(name: str) -> str:
 def sanitize_resource_name(name: str) -> str:
     # Terraform resource labels: cannot start with special characters or digit
-    resource_name = re.sub(r"[^a-zA-Z0-9_]+", "_", name.strip())
-    if re.match(r"^\d", x):
-        resource_name = f"db_{resource_name}"
+    resource_name = re.sub(r"[^a-zA-Z0-9_]+", "_", name.strip()).lower()
+    if not resource_name or re.match(r"^\d", resource_name):
+        resource_name = f"db_{resource_name}" if resource_name else "db_resource"
     return resource_name
-
 def load_table(path: Path, sheet: str | None):
     if path.suffix.lower() in {".xlsx", ".xls"}:
         return pd.read_excel(path, sheet_name=sheet or 0)
