@@ -9,6 +9,29 @@ variable "tf_state_prefix" {
     type        = string
 }
 
+variable "aws_account_id" {
+  type        = string
+  description = "12-digit AWS Account ID that owns the app VPC"
+}
+
+variable "aws_vpc_id" {
+  type        = string
+  description = "VPC ID to peer with Redis Cloud"
+}
+
+variable "app_vpc_cidr" {
+  type        = string
+  description = "CIDR of your app VPC (if not provided, we'll look it up)"
+  default     = null
+}
+
+# Your VPC routing (add routes to Redis Cloud CIDR in these route tables)
+variable "route_table_ids" {
+  type        = list(string)
+  description = "Route table IDs in your VPC that should route to Redis Cloud via the peering"
+  default     = []
+}
+
 # Redis Cloud Secret Keys
 variable "rediscloud_api_key" {
     description = "API key for Redis Cloud account"

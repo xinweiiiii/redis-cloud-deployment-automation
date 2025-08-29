@@ -10,6 +10,28 @@ variable "aws_region_redis_cloud" {
   default     = "ap-southeast-1"
 }
 
+variable "aws_account_id" {
+  type        = string
+  description = "12-digit AWS Account ID that owns the app VPC"
+}
+
+variable "aws_vpc_id" {
+  type        = string
+  description = "VPC ID to peer with Redis Cloud"
+}
+
+variable "app_vpc_cidr" {
+  type        = string
+  description = "CIDR of your app VPC (if not provided, we'll look it up)"
+  default     = null
+}
+
+variable "route_table_ids" {
+  type        = list(string)
+  description = "Route table IDs in your VPC that should route to Redis Cloud via the peering"
+  default     = []
+}
+
 variable "preferred_azs" {
   type        = list(string)
   description = "Exact AZ names to use (must be in the selected region)"
