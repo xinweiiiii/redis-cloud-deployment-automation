@@ -32,9 +32,8 @@ resource "rediscloud_subscription" "sub" {
             dataset_size_in_gb              = creation_plan.value.dataset_size_in_gb
             quantity                        = creation_plan.value.quantity
             replication                     = creation_plan.value.replication
-            throughput_measurement_by       = "operations-per-second"
+            throughput_measurement_by       = try(creation_plan.value.throughput_measurement_by, "operations-per-second")
             throughput_measurement_value    = creation_plan.value.throughput_measurement_value
-            modules = creation_plan.value.modules
         }
     }
 

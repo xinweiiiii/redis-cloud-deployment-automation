@@ -68,11 +68,30 @@ variable "preferred_azs" {
     error_message = "Provide at least one AZ, and ensure all start with the selected region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
   }
 }
+
+# ----- Dynamic creation_plan input (from your JSON) -----
+variable "creation_plans" {
+  description = "Reservation plan(s) Redis Cloud uses to pre-provision capacity"
+  type = list(object({
+    dataset_size_in_gb           = number   # allow decimals like 0.1
     quantity                     = number
     replication                  = bool
-    throughput_measurement_by    = string
     throughput_measurement_value = number
-    modules = list(string)
+    # optional in your JSON; default to ops/sec if omitted
+    throughput_measurement_by    = optional(string, "operations-per-second")
   }))
+  default = []
 }
 
+# ----- (Optional) per-DB input if/when you add DB resources -----
+variable "databases" {
+  description = "Per-database config (create one rediscloud_subscription_database per entry)"
+  type = map(object({
+    dataset_size_in_gb           = number
+    replication                  = bool
+    throughput_measurement_value = number
+    modules                      = optional(list(string), [])
+    support_oss_cluster_api      = optional(bool, false)
+  }))
+  default = {}
+}

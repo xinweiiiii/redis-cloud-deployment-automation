@@ -9,6 +9,16 @@ terraform apply \
   -var 'aws_region=ap-southeast-1' \
 ```
 
+```
+terraform plan \
+  -var-file=env/base.tfvars.json \
+  -var-file=env/prod.tfvars.json
+# then
+terraform apply \
+  -var-file=env/base.tfvars.json \
+  -var-file=env/prod.tfvars.json
+```
+
 # Prepare and activate the virtual environment
 
 ```bash
