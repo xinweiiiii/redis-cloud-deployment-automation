@@ -22,7 +22,7 @@ python excel_to_terraform_tfvars.py --input sizing.csv --out terraform.auto.tfva
 import argparse, json, sys, re
 from pathlib import Path
 # TODO: Define these helper functions or import from a separate module
-# from utils import pick_column, str_to_bool, sanitize_resource_name, load_table
+from helper import pick_column, str_to_bool, load_table
 import pandas as pd
 
 def main():
@@ -57,11 +57,13 @@ def main():
         print(f"Columns seen: {list(df.columns)}", file=sys.stderr)
         sys.exit(2)
 
+    PREC = 3
+
     # Build normalised working JSON frame
     work = {}
     work["database_name"] = df[db_col].astype(str)
     work["quantity"] = pd.to_numeric(df[qty_col], errors="coerce").fillna(1).astype(int)
-    work["dataset_size_in_gb"] = pd.to_numeric(df[mem_col],errors="coerce")
+    work["dataset_size_in_gb"] = pd.to_numeric(df[mem_col], errors="coerce").round(PREC)
     work["throughput_ops_per_second"] = pd.to_numeric(df[ops_col], errors="coerce") \
         .fillna(0).astype(int) if ops_col else pd.Series([0] * len(df))
     work["replication"] = df[repl_col].apply(str_to_bool) if repl_col else False
@@ -74,11 +76,14 @@ def main():
 
     wf = pd.DataFrame(work)
 
+    print(wf)
     # Clean rows
     before = len(wf)
     wf = wf.dropna(subset=["database_name","dataset_size_in_gb"]).copy()
-    wf["dataset_size_in_gb"] = wf["dataset_size_in_gb"].round().astype(int)
-    wf = wf[wf["dataset_size_in_gb"] > 0]
+    wf["dataset_size_in_gb"] = wf["dataset_size_in_gb"]
+    wf["size_key"] = wf["dataset_size_in_gb"].round(PREC)
+
+    print(wf)
     after = len(wf)
     if after < before:
         print(f"Skipped {before - after} row(s) due to missing/zero dataset_size_in_gb or name", file=sys.stderr)
@@ -92,25 +97,28 @@ def main():
         for i in range(q):
             name = database_name if q == 1 else f"{database_name}-{i+1}"
             databases[name] = {
-                "dataset_size_in_gb": int(r.get("dataset_size_in_gb", 0 )),
+                "dataset_size_in_gb": float(round(r.get("dataset_size_in_gb", 0.0), PREC)),
                 "replication": bool(r.get("replication", False)),
                 "throughput_measurement_value": int(r.get("throughput_ops_per_second", 0)),
                 "modules": base_mods,
                 "support_oss_cluster_api": bool(r.get("support_oss_cluster_api", False)),
+            }
+
     # Build creation plans by grouping
     g = wf.groupby(
-        ["dataset_size_in_gb", "replication", "throughput_ops_per_second"],
+        ["size_key", "replication", "throughput_ops_per_second"],
         dropna=False
     )["quantity"].sum().reset_index()
 
+
     creation_plans = [{
-        "dataset_size_in_gb": int(row["dataset_size_in_gb"]),
+        "dataset_size_in_gb": float(round(row["size_key"], PREC)),
         "quantity": int(row["quantity"]),
         "replication": bool(row["replication"]),
         "throughput_measurement_by": "operations-per-second",
         "throughput_measurement_value": int(row["throughput_ops_per_second"]),
     } for _, row in g.iterrows()]
-    } for _, row in g.iterrows()]
+
     # Write tfvars JSON
     tfvars = {"databases": databases, "creation_plans": creation_plans}
     out_path = Path(args.out)
