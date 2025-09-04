@@ -57,13 +57,13 @@ variable "trusted_principals" {
   default     = [] # e.g., ["arn:aws:iam::123456789012:user/you", "arn:aws:iam::123456789012:role/AWSReservedSSO_AdministratorAccess_..."]
 }
 
-# Networking Configuration
-variable "vpc_cidr" {
+# Redis Cloud Subscription Provisioning
+variable "aws_region_redis_cloud" {
   type        = string
-  default     = "10.42.0.0/16"
+  description = "AWS region for Redis Cloud"
+  default     = "ap-southeast-1"
 }
 
-# Redis Cloud Subscription Provisioning
 variable "subscription_name" {
     type = string
     description = "Redis subscription name"
@@ -78,17 +78,6 @@ variable "preferred_azs" {
   validation {
     condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.aws_region)])
     error_message = "Provide at least one AZs, all starting with the region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
-  }
-}
-
-variable "preferred_azs" {
-  type        = list(string)
-  description = "Exact AZ names to use (must be in the selected region)"
-  default     = ["ap-southeast-1a", "ap-southeast-1b"]
-
-  validation {
-    condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.aws_region_redis_cloud)])
-    error_message = "Provide at least one AZ, and ensure all start with the selected region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
   }
 }
 
@@ -159,4 +148,11 @@ variable "redis_version" {
     condition     = contains(["7.4", "8"], var.redis_version)
     error_message = "redis_version must be either \"7.4\" or \"8\"."
   }
+}
+
+# Redis Related Network
+variable "redis_deployment_cidr_block" {
+    type = string
+    description = "CIDR block redis cloud use on its deployment"
+    default = "10.250.1.0/24"
 }
