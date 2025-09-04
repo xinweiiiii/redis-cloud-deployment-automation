@@ -11,16 +11,15 @@ resource "rediscloud_subscription" "sub" {
     payment_method   = "credit-card"                               # ignored after create
     payment_method_id= data.rediscloud_payment_method.default.id
     memory_storage   = "ram"                                       # or "ram-and-flash"
-    redis_version    = var.redis_version # Change this to env variable
 
     # Cloud provider + region details (add more cloud_provider blocks if multi-region)
     cloud_provider {
-        provider = "aws"
+        provider = "AWS"
         region {
             region                      = var.aws_region_redis_cloud
             networking_deployment_cidr  = var.redis_deployment_cidr_block 
             multiple_availability_zones = true
-            preferred_availability_zones= var.preferred_azs
+            # preferred_availability_zones= var.preferred_azs
         }
     }
 

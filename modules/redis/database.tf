@@ -12,7 +12,14 @@ resource "rediscloud_subscription_database" "db" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = each.value.throughput_measurement_value
 
-    modules                 = try(each.value.modules, [])
+    # modules must be list(object)
+    # modules = try([
+    #     for m in each.value.modules : {
+    #     name    = m.name
+    #     version = try(m.version, null)
+    #     }
+    # ], null)
+
     support_oss_cluster_api = try(each.value.support_oss_cluster_api, false)
 
     # --- Security (optional) ---
@@ -27,13 +34,4 @@ resource "rediscloud_subscription_database" "db" {
 
     # --- Replication of external DBs (optional) ---
     replica_of = try(each.value.replica_ofs, null)
-
-    # --- Alerts (optional) ---
-    dynamic "alerts" {
-        for_each = try(each.value.alerts, [])
-        content {
-        name  = alerts.value.name
-        value = alerts.value.value
-        }
-    }
 }

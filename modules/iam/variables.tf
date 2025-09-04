@@ -20,3 +20,8 @@ variable "aws_region" {
   description = "AWS region for VPC and resources"
   default     = "ap-southeast-1"
 }
+
+variable "aws_account_id" {
+  type        = string
+  description = "12-digit AWS Account ID that owns the app VPC"
+}

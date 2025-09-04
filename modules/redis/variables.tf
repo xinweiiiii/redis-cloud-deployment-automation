@@ -36,11 +36,6 @@ variable "preferred_azs" {
   type        = list(string)
   description = "Exact AZ names to use (must be in the selected region)"
   default     = ["ap-southeast-1a", "ap-southeast-1b"]
-
-  validation {
-    condition     = length(var.preferred_azs) >= 1 && alltrue([for az in var.preferred_azs : startswith(az, var.aws_region_redis_cloud)])
-    error_message = "Provide at least one AZ, and ensure all start with the selected region (e.g., ap-southeast-1a, ap-southeast-1b for ap-southeast-1)."
-  }
 }
 
 variable "redis_version" {
@@ -76,7 +71,10 @@ variable "databases" {
     dataset_size_in_gb           = number
     replication                  = bool
     throughput_measurement_value = number
-    modules                      = optional(list(string), [])
+    modules = optional(list(object({
+      name    = string
+      version = optional(string)
+    })))    
     support_oss_cluster_api      = optional(bool, false)
   
     # TODO: Consider shifting this to another env variable

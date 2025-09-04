@@ -3,7 +3,11 @@ terraform {
   required_providers {
     rediscloud = {
       source = "RedisLabs/rediscloud"
-      version = "2.1.5"
+      version = "2.3.1"
+    }
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.11"
     }
   }
 }
@@ -17,11 +21,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-terraform {
-  backend "s3" {
-    bucket = "demo-my-terraform-state-bucket"
-    key = "rediscloud/terraform.tfstate"
-    region = "ap-southeast-1"
-    encrypt = true
-  }
-}
+# terraform {
+#   backend "s3" {
+#     bucket = var.tf_state_bucket
+#     key = var.tf_state_prefix
+#     region = "ap-southeast-1"
+#     encrypt = true
+#   }
+# }
