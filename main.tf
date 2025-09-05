@@ -24,7 +24,6 @@ module "redis" {
     aws_vpc_id = var.aws_vpc_id
     app_vpc_cidr = var.app_vpc_cidr
     route_table_ids = var.route_table_ids
-    preferred_azs = var.preferred_azs
     redis_version = var.redis_version
     redis_deployment_cidr_block = var.redis_deployment_cidr_block
     creation_plans = var.creation_plans

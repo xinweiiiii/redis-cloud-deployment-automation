@@ -1,32 +1,59 @@
 # redis-cloud-deployment-automation
 
+# Prerequsite
+- Terraform 
+```
+brew install terraform
+```
+
 # Run the script
+## Convert the `redis2re` input to terraform env variable
 ```
-cd bootstrap
-terraform init
-terraform apply \
-  -var 'bucket_name=your-unique-tf-state-bucket' \
-  -var 'aws_region=ap-southeast-1' \
-```
+cd input
 
-```
-terraform plan \
-  -var-file=env/base.tfvars.json \
-  -var-file=env/prod.tfvars.json
-# then
-terraform apply \
-  -var-file=env/base.tfvars.json \
-  -var-file=env/prod.tfvars.json
-```
-
-# Prepare and activate the virtual environment
-
-```bash
 python3 -m venv .virtualenv && source .virtualenv/bin/activate
-```
 
-Install necessary libraries and dependencies
-
-```
 pip install -r requirements.txt
+
+python excel_to_terraform_tfvars.py ./samples/{filename}
+```
+## Initial Run Terraform Init
+Comment this code in `config.tf`
+```
+terraform {
+  backend "s3" {
+    bucket = "redis-cloud-state"
+    key = "redis"
+    region = "ap-southeast-1"
+    encrypt = true
+  }
+}
+``` 
+
+```
+terraform init 
+```
+
+```
+terraform plan -out=tfplan \
+  --var-file="./input/terraform.auto.tfvars.json" \
+  --var-file="env.tfvars"
+```
+
+Apply the changes
+```
+terraform apply "tfplan"
+```
+
+# Deployment
+The initial deployment will create the following resources
+1. S3 bucket to store the terraform state refer to next step on how to migrate local terraform state 
+2. Create the necessary IAM roles with least priviledge to run the script by assuming the role instead of the user
+[Best Practices](https://docs.aws.amazon.com/IAM/latest/UserGuide/best-practices.html#bp-workloads-use-roles)
+3. Provision Terraform subscription and Databases according to config in `env.tfvars` 
+
+# How to migrate state from local to S3 bucket
+Uncomment the code mentioned above:
+```
+terraform init -migrate-state 
 ```

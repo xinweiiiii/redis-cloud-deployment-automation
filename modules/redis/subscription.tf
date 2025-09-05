@@ -19,20 +19,6 @@ resource "rediscloud_subscription" "sub" {
             region                      = var.aws_region_redis_cloud
             networking_deployment_cidr  = var.redis_deployment_cidr_block 
             multiple_availability_zones = true
-            # preferred_availability_zones= var.preferred_azs
-        }
-    }
-
-    // TODO: To be retreive and configure via env variable
-    # Creation plan tells Redis Cloud how to size the cluster to host your DBs
-    dynamic "creation_plan" {
-        for_each = var.creation_plans
-        content {
-            dataset_size_in_gb              = creation_plan.value.dataset_size_in_gb
-            quantity                        = creation_plan.value.quantity
-            replication                     = creation_plan.value.replication
-            throughput_measurement_by       = try(creation_plan.value.throughput_measurement_by, "operations-per-second")
-            throughput_measurement_value    = creation_plan.value.throughput_measurement_value
         }
     }
 

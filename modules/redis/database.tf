@@ -1,4 +1,11 @@
 # Create one Redis Cloud DB per entry in var.databases
+locals {
+  default_modules = [
+    { name = "RedisJSON" },
+    { name = "RediSearch" },
+  ]
+}
+
 resource "rediscloud_subscription_database" "db" {
     for_each = var.databases
 
@@ -12,13 +19,16 @@ resource "rediscloud_subscription_database" "db" {
     throughput_measurement_by    = "operations-per-second"
     throughput_measurement_value = each.value.throughput_measurement_value
 
-    # modules must be list(object)
-    # modules = try([
-    #     for m in each.value.modules : {
-    #     name    = m.name
-    #     version = try(m.version, null)
-    #     }
-    # ], null)
+    modules = (
+        try(length(each.value.modules), 0) == 0
+        ? local.default_modules
+        : [
+            for m in each.value.modules : {
+                name    = m.name
+                version = try(m.version, null)
+            }
+        ]
+    )
 
     support_oss_cluster_api = try(each.value.support_oss_cluster_api, false)
 

@@ -32,12 +32,6 @@ variable "route_table_ids" {
   default     = []
 }
 
-variable "preferred_azs" {
-  type        = list(string)
-  description = "Exact AZ names to use (must be in the selected region)"
-  default     = ["ap-southeast-1a", "ap-southeast-1b"]
-}
-
 variable "redis_version" {
   type        = string
   description = "Redis version for the subscription"
@@ -64,7 +58,6 @@ variable "creation_plans" {
   default = []
 }
 
-# ----- (Optional) per-DB input if/when you add DB resources -----
 variable "databases" {
   description = "Per-database config (create one rediscloud_subscription_database per entry)"
   type = map(object({

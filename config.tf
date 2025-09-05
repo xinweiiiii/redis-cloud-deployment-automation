@@ -21,11 +21,11 @@ provider "aws" {
   region = var.aws_region
 }
 
-# terraform {
-#   backend "s3" {
-#     bucket = var.tf_state_bucket
-#     key = var.tf_state_prefix
-#     region = "ap-southeast-1"
-#     encrypt = true
-#   }
-# }
+terraform {
+  backend "s3" {
+    bucket = "redis-cloud-state"
+    key = "redis"
+    region = "ap-southeast-1"
+    encrypt = true
+  }
+}

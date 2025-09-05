@@ -70,12 +70,6 @@ variable "subscription_name" {
     default = "default subscription"
 }
 
-variable "preferred_azs" {
-  type        = list(string)
-  description = "Exact AZ names to use (must be in the selected region)"
-  default     = ["ap-southeast-1a", "ap-southeast-1b"]
-}
-
 # ----- Dynamic creation_plan input (from your JSON) -----
 variable "creation_plans" {
   description = "Reservation plan(s) Redis Cloud uses to pre-provision capacity"
