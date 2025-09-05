@@ -1,10 +1,21 @@
 # redis-cloud-deployment-automation
 
+This project automates the provisioning of Redis Enterprise Cloud resources (subscriptions and databases) using Terraform, based on sizing input provided in an Excel file.
+
+The workflow:
+Convert a sizing Excel (redis2re) into Terraform variable files.
+
+Run Terraform to provision:
+- A secure S3 bucket for state storage
+- IAM roles with least privileges
+- Redis Cloud subscription(s) and database(s)
+
 # Prerequsite
 - Terraform 
 ```
 brew install terraform
 ```
+- Python 3.9+ (with venv and pip)
 
 # Run the script
 ## Convert the `redis2re` input to terraform env variable
@@ -57,3 +68,22 @@ Uncomment the code mentioned above:
 ```
 terraform init -migrate-state 
 ```
+
+# Notes & Best Practices
+
+State safety: Never commit `.tfstate` or `.tfplan` files to Git. They contain sensitive info. Use .gitignore:
+
+```
+*.tfstate
+*.tfstate.*
+.terraform/
+*.tfplan
+terraform.log
+```
+
+
+Naming: Databases defined in env.tfvars are managed via rediscloud_subscription_database. The initial seed DB created by creation_plan will be adopted/renamed in Terraform.
+
+Modules: If no modules are defined per DB, defaults (RedisJSON, RediSearch) are applied automatically.
+
+IAM roles: Make sure you have credentials that can assume the role provisioned by Terraform.
