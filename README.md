@@ -26,7 +26,7 @@ python3 -m venv .virtualenv && source .virtualenv/bin/activate
 
 pip install -r requirements.txt
 
-python excel_to_terraform_tfvars.py ./samples/{filename}
+python re_stats_tfvars.py ./samples/{filename}
 ```
 ## Initial Run Terraform Init
 Comment this code in `config.tf`
@@ -87,3 +87,6 @@ Naming: Databases defined in env.tfvars are managed via rediscloud_subscription_
 Modules: If no modules are defined per DB, defaults (RedisJSON, RediSearch) are applied automatically.
 
 IAM roles: Make sure you have credentials that can assume the role provisioned by Terraform.
+
+# Alternatives
+- Explore using redis cloud API directly -> JSON format
