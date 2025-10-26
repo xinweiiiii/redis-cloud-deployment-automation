@@ -1,12 +1,12 @@
 {
   "databases": [
     {
-      "name": "redis-db1",
+      "name": "xw-redis-db1-test",
       "dataset_size_in_gb": 0.1,
       "replication": false,
       "throughput_measurement_by": "operations-per-second",
       "throughput_measurement_value": 100,
-      "modules": [],
+      "modulexs": [],
       "support_oss_cluster_api": false
     }
   ],
