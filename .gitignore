@@ -43,5 +43,7 @@ override.tf.json
 .terraformrc
 terraform.rc
 
-# Ginore API env file
+# Ignore API env file
 .env
+.virtualenv
+

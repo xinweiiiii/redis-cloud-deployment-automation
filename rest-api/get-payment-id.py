@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 import os
 import requests
+import json
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -25,7 +27,6 @@ def list_payment_methods():
     return data
 
 if __name__ == "__main__":
-    import json
     pm_list = list_payment_methods()
     print("\nAvailable payment method IDs:")
     for pm in pm_list.get("paymentMethods", pm_list):

@@ -47,7 +47,7 @@ SESSION = requests.Session()
 SESSION.headers.update(auth_headers())
 
 # ----------------- HTTP helpers -----------------
-def die_http(resp: requests.Response, msg: str):
+def http_error(resp: requests.Response, msg: str):
     try:
         body = resp.json()
     except Exception:
@@ -58,14 +58,14 @@ def post(path: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     url = f"{BASE_URL}/{path.lstrip('/')}"
     r = SESSION.post(url, data=json.dumps(payload), timeout=60)
     if not r.ok:
-        die_http(r, f"POST {path} failed")
+        http_error(r, f"POST {path} failed")
     return r.json()
 
 def get(path: str) -> Dict[str, Any]:
     url = f"{BASE_URL}/{path.lstrip('/')}"
     r = SESSION.get(url, timeout=60)
     if not r.ok:
-        die_http(r, f"GET {path} failed")
+        http_error(r, f"GET {path} failed")
     return r.json()
 
 # ----------------- Polling helpers -----------------
