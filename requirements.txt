@@ -1,0 +1,14 @@
+# Core dependencies for CSV/Excel processing
+openpyxl==3.1.5
+pandas==2.2.3
+python-dotenv==1.0.1
+
+# Web framework dependencies
+Flask==3.0.3
+Werkzeug==3.0.3
+
+# HTTP client for Redis Cloud API calls
+requests==2.31.0
+
+# Production WSGI server
+gunicorn==22.0.0

@@ -1,0 +1,29 @@
+services:
+  redis-automation-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: redis-automation-api
+    ports:
+      - "9000:9000"
+    environment:
+      - PORT=9000
+      - FLASK_DEBUG=false
+    env_file:
+      - rest-api/.env
+    volumes:
+      # Mount for persistent logs
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - redis-automation-network
+
+networks:
+  redis-automation-network:
+    driver: bridge

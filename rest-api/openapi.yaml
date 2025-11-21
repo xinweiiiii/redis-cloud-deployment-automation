@@ -1,0 +1,567 @@
+openapi: 3.0.3
+info:
+  title: Redis Cloud Deployment Automation API
+  description: |
+    REST API for automating Redis Cloud deployments. This API provides endpoints for:
+    - Converting CSV/Excel files to Redis Cloud JSON payloads
+    - Converting CSV/Excel files to Terraform tfvars
+    - Provisioning Redis Cloud resources via REST API
+    - Combined convert-and-provision workflow
+  version: 1.0.0
+  contact:
+    name: API Support
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:5000
+    description: Local development server
+  - url: http://localhost:9000
+    description: Docker container server
+
+tags:
+  - name: health
+    description: Health check endpoints
+  - name: conversion
+    description: File conversion endpoints
+  - name: provisioning
+    description: Redis Cloud provisioning endpoints
+
+paths:
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check
+      description: Returns the health status of the API service
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/convert/json:
+    post:
+      tags:
+        - conversion
+      summary: Convert CSV/Excel to Redis Cloud JSON
+      description: |
+        Converts a CSV or Excel file containing database specifications into
+        Redis Cloud API JSON payloads. Supports three output types: databases,
+        subscription, or combined.
+      operationId: convertToJson
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file containing database specifications
+                output_type:
+                  type: string
+                  enum: [databases, subscription, combined]
+                  default: combined
+                  description: Type of output to generate
+      responses:
+        '200':
+          description: Successfully converted file to JSON
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/CombinedPayload'
+                  - $ref: '#/components/schemas/DatabasesPayload'
+                  - $ref: '#/components/schemas/SubscriptionPayload'
+              examples:
+                combined:
+                  summary: Combined payload example
+                  value:
+                    databases:
+                      - name: redis-db1
+                        dataset_size_in_gb: 0.1
+                        throughput_measurement_by: operations-per-second
+                        throughput_measurement_value: 100
+                        replication: false
+                        support_oss_cluster_api: false
+                        modules: []
+                    subscription:
+                      creation_plan:
+                        - dataset_size_in_gb: 0.1
+                          quantity: 1
+                          replication: false
+                          throughput_measurement_by: operations-per-second
+                          throughput_measurement_value: 100
+        '400':
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                noFile:
+                  summary: No file provided
+                  value:
+                    error: No file provided
+                invalidFileType:
+                  summary: Invalid file type
+                  value:
+                    error: File type not allowed. Use CSV or Excel files
+                invalidOutputType:
+                  summary: Invalid output type
+                  value:
+                    error: Invalid output_type. Use databases, subscription, or combined
+        '413':
+          description: File too large (max 16MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetailResponse'
+
+  /api/convert/tfvars:
+    post:
+      tags:
+        - conversion
+      summary: Convert CSV/Excel to Terraform tfvars
+      description: |
+        Converts a CSV or Excel file containing database specifications into
+        Terraform tfvars JSON format. Optionally emits HCL format as well.
+      operationId: convertToTfvars
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file containing database specifications
+                emit_hcl:
+                  type: string
+                  enum: ['true', 'false']
+                  default: 'false'
+                  description: Whether to emit HCL format in addition to JSON
+      responses:
+        '200':
+          description: Successfully converted file to tfvars
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TfvarsResponse'
+        '400':
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File too large (max 16MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorDetailResponse'
+
+  /api/provision:
+    post:
+      tags:
+        - provisioning
+      summary: Provision Redis Cloud resources
+      description: |
+        Provisions Redis Cloud resources (subscriptions and databases) using the
+        Redis Cloud REST API. Requires environment variables for authentication.
+
+        Required environment variables:
+        - REDIS_CLOUD_ACCOUNT_KEY
+        - REDIS_CLOUD_API_KEY
+        - REDIS_CLOUD_ACCOUNT_ID
+        - REDIS_CLOUD_PROVIDER
+        - REDIS_CLOUD_REGION
+        - REDIS_CLOUD_PAYMENT_METHOD_ID
+      operationId: provisionRedis
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CombinedPayload'
+            examples:
+              basic:
+                summary: Basic provisioning request
+                value:
+                  databases:
+                    - name: redis-db1
+                      dataset_size_in_gb: 0.1
+                      throughput_measurement_by: operations-per-second
+                      throughput_measurement_value: 100
+                      replication: false
+                      support_oss_cluster_api: false
+                      modules: []
+                  subscription:
+                    creation_plan:
+                      - dataset_size_in_gb: 0.1
+                        quantity: 1
+                        replication: false
+                        throughput_measurement_by: operations-per-second
+                        throughput_measurement_value: 100
+      responses:
+        '200':
+          description: Successfully provisioned resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningResponse'
+        '400':
+          description: Bad request - Missing required fields or environment variables
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorResponse'
+                  - $ref: '#/components/schemas/MissingEnvVarsResponse'
+              examples:
+                missingEnvVars:
+                  summary: Missing environment variables
+                  value:
+                    error: Missing required environment variables
+                    missing:
+                      - REDIS_CLOUD_ACCOUNT_KEY
+                      - REDIS_CLOUD_API_KEY
+                invalidContentType:
+                  summary: Invalid content type
+                  value:
+                    error: Content-Type must be application/json
+                emptyPayload:
+                  summary: Empty payload
+                  value:
+                    error: Empty JSON payload
+                invalidStructure:
+                  summary: Invalid payload structure
+                  value:
+                    error: Payload must contain either "databases" or "subscription" key
+        '500':
+          description: Provisioning failed or internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningErrorResponse'
+
+  /api/convert-and-provision:
+    post:
+      tags:
+        - provisioning
+      summary: Convert and provision in one step
+      description: |
+        Combined endpoint that converts a CSV/Excel file to JSON and immediately
+        provisions the Redis Cloud resources. This is a convenience endpoint that
+        combines the /api/convert/json and /api/provision endpoints.
+      operationId: convertAndProvision
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV or Excel file containing database specifications
+      responses:
+        '200':
+          description: Successfully converted and provisioned resources
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningResponse'
+        '400':
+          description: Bad request - Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '413':
+          description: File too large (max 16MB)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProvisioningErrorResponse'
+
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - service
+        - version
+      properties:
+        status:
+          type: string
+          example: healthy
+          description: Health status of the service
+        service:
+          type: string
+          example: redis-cloud-automation-api
+          description: Service name
+        version:
+          type: string
+          example: 1.0.0
+          description: API version
+
+    DatabaseConfig:
+      type: object
+      required:
+        - name
+        - dataset_size_in_gb
+        - throughput_measurement_by
+        - throughput_measurement_value
+        - replication
+        - support_oss_cluster_api
+        - modules
+      properties:
+        name:
+          type: string
+          description: Database name
+          example: redis-db1
+        dataset_size_in_gb:
+          type: number
+          format: float
+          description: Size of the dataset in gigabytes
+          example: 0.1
+          minimum: 0.1
+        throughput_measurement_by:
+          type: string
+          enum: [operations-per-second, number-of-shards]
+          description: How to measure throughput
+          example: operations-per-second
+        throughput_measurement_value:
+          type: integer
+          description: Throughput value
+          example: 100
+          minimum: 100
+        replication:
+          type: boolean
+          description: Enable replication for high availability
+          example: false
+        support_oss_cluster_api:
+          type: boolean
+          description: Enable support for OSS cluster API
+          example: false
+        modules:
+          type: array
+          description: Redis modules to enable
+          items:
+            type: string
+          example: []
+
+    CreationPlan:
+      type: object
+      required:
+        - dataset_size_in_gb
+        - quantity
+        - replication
+        - throughput_measurement_by
+        - throughput_measurement_value
+      properties:
+        dataset_size_in_gb:
+          type: number
+          format: float
+          description: Size of the dataset in gigabytes
+          example: 0.1
+          minimum: 0.1
+        quantity:
+          type: integer
+          description: Number of shards
+          example: 1
+          minimum: 1
+        replication:
+          type: boolean
+          description: Enable replication
+          example: false
+        throughput_measurement_by:
+          type: string
+          enum: [operations-per-second, number-of-shards]
+          description: How to measure throughput
+          example: operations-per-second
+        throughput_measurement_value:
+          type: integer
+          description: Throughput value
+          example: 100
+          minimum: 100
+
+    SubscriptionPayload:
+      type: object
+      required:
+        - subscription
+      properties:
+        subscription:
+          type: object
+          required:
+            - creation_plan
+          properties:
+            creation_plan:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreationPlan'
+              minItems: 1
+
+    DatabasesPayload:
+      type: object
+      required:
+        - databases
+      properties:
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseConfig'
+          minItems: 1
+
+    CombinedPayload:
+      type: object
+      required:
+        - databases
+        - subscription
+      properties:
+        databases:
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseConfig'
+          minItems: 1
+        subscription:
+          type: object
+          required:
+            - creation_plan
+          properties:
+            creation_plan:
+              type: array
+              items:
+                $ref: '#/components/schemas/CreationPlan'
+              minItems: 1
+
+    TfvarsResponse:
+      type: object
+      required:
+        - tfvars
+      properties:
+        tfvars:
+          type: object
+          description: Terraform variables in JSON format
+          additionalProperties: true
+        hcl:
+          type: string
+          description: Terraform variables in HCL format (only if emit_hcl=true)
+
+    ProvisioningResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          enum: [success]
+          description: Status of the provisioning operation
+        result:
+          type: object
+          description: Provisioning result with subscription and database IDs
+          additionalProperties: true
+        message:
+          type: string
+          description: Text message if result is not in JSON format
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    ErrorDetailResponse:
+      type: object
+      required:
+        - error
+        - details
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Detailed error information
+
+    MissingEnvVarsResponse:
+      type: object
+      required:
+        - error
+        - missing
+      properties:
+        error:
+          type: string
+          description: Error message
+        missing:
+          type: array
+          items:
+            type: string
+          description: List of missing environment variable names
+
+    ProvisioningErrorResponse:
+      type: object
+      required:
+        - error
+        - details
+      properties:
+        error:
+          type: string
+          description: Error message
+        details:
+          type: string
+          description: Detailed error information
+        stdout:
+          type: string
+          description: Standard output from the provisioning process
+
+  securitySchemes:
+    envVars:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: |
+        API authentication via environment variables:
+        - REDIS_CLOUD_ACCOUNT_KEY
+        - REDIS_CLOUD_API_KEY
+        - REDIS_CLOUD_ACCOUNT_ID
+
+security: []
